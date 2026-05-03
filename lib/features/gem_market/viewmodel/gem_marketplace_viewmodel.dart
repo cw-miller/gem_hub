@@ -1,14 +1,12 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:job_market/data/models/gem_market/gem_model.dart';
 import 'package:job_market/data/repositories/gem_repository.dart';
 import 'package:job_market/core/enums/gem_type.dart';
 
-final gemMarketplaceViewModelProvider =
-    AsyncNotifierProvider.autoDispose<GemMarketplaceViewModel, List<Gem>>(() {
-      return GemMarketplaceViewModel();
-    });
+part 'gem_marketplace_viewmodel.g.dart';
 
-class GemMarketplaceViewModel extends AutoDisposeAsyncNotifier<List<Gem>> {
+@riverpod
+class GemMarketplaceViewModel extends _$GemMarketplaceViewModel {
   String _currentQuery = '';
   GemType _currentType = GemType.allGems;
 

@@ -1,13 +1,11 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:job_market/data/models/job_market/job_model.dart';
 import 'package:job_market/data/repositories/job_repository.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-final marketplaceViewModelProvider =
-    AsyncNotifierProvider.autoDispose<MarketplaceViewModel, List<Job>>(() {
-      return MarketplaceViewModel();
-    });
+part 'marketplace_viewmodel.g.dart';
 
-class MarketplaceViewModel extends AutoDisposeAsyncNotifier<List<Job>> {
+@riverpod
+class MarketplaceViewModel extends _$MarketplaceViewModel {
   String _currentQuery = '';
   String _currentCategory = 'All Jobs';
 

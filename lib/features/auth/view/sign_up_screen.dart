@@ -1,62 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:job_market/features/auth/viewmodels/auth_viewmodel.dart'; 
+import 'package:job_market/features/auth/viewmodels/auth_viewmodel.dart';
+import 'package:go_router/go_router.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
-  const SignUpScreen({Key? key}) : super(key: key);
+  const SignUpScreen({super.key});
 
   @override
   ConsumerState<SignUpScreen> createState() => _SignUpScreenState();
 }
 
 class _SignUpScreenState extends ConsumerState<SignUpScreen> {
-  final TextEditingController _nameCtrl = TextEditingController();
-  final TextEditingController _usernameCtrl = TextEditingController();
+  final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passwordCtrl = TextEditingController();
+  final TextEditingController _confirmPasswordCtrl = TextEditingController();
+
   final Color primaryGreen = const Color(0xFF10C971);
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   void _signUp() async {
-    String name = _nameCtrl.text.trim();
-    String username = _usernameCtrl.text.trim();
-    String pass = _passwordCtrl.text;
+    final email = _emailCtrl.text.trim();
+    final password = _passwordCtrl.text;
+    final confirmPassword = _confirmPasswordCtrl.text;
 
-    if (name.isEmpty || username.isEmpty || pass.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+    final vm = ref.read(authViewModelProvider.notifier);
+
+    // 🔐 VALIDATION (ViewModel)
+    final error = vm.validateSignUp(email, password, confirmPassword);
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
       return;
     }
 
-    final isSuccess = await ref
-        .read(authViewModelProvider.notifier)
-        .signUp(name, username, pass);
+    // 🌐 SIGNUP CALL
+    final success = await vm.signUp(email, password);
 
-    if (mounted) {
-      if (isSuccess) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account created! Please log in.'),
-            backgroundColor: Color(0xFF10C971),
-          ),
-        );
-        Navigator.pop(context); // Account eka haduwama back to login
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Username already exists. Try another.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created! Please log in.'),
+          backgroundColor: Color(0xFF10C971),
+        ),
+      );
+      context.pop();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sign up failed. Try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    bool isDark = Theme.of(context).brightness == Brightness.dark;
+  void dispose() {
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    _confirmPasswordCtrl.dispose();
+    super.dispose();
+  }
 
-    // 👇 Loading state
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final authState = ref.watch(authViewModelProvider);
     final isLoading = authState is AsyncLoading;
 
@@ -65,7 +78,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: primaryGreen),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -73,43 +85,29 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Create Account',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Sign up to start posting and applying for jobs',
-                style: TextStyle(color: Colors.grey[500]),
-              ),
+
               const SizedBox(height: 40),
 
+              // EMAIL
               TextField(
-                controller: _nameCtrl,
+                controller: _emailCtrl,
+                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
-                  labelText: 'Full Name',
+                  labelText: 'Email',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  prefixIcon: const Icon(Icons.badge),
+                  prefixIcon: const Icon(Icons.email),
                 ),
               ),
+
               const SizedBox(height: 16),
-              TextField(
-                controller: _usernameCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Username',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  prefixIcon: const Icon(Icons.person),
-                ),
-              ),
-              const SizedBox(height: 16),
+
+              // PASSWORD
               TextField(
                 controller: _passwordCtrl,
                 obscureText: _obscurePassword,
@@ -125,20 +123,45 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           ? Icons.visibility_off
                           : Icons.visibility,
                     ),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
+                    onPressed: () => setState(
+                      () => _obscurePassword = !_obscurePassword,
+                    ),
                   ),
                 ),
               ),
+
+              const SizedBox(height: 16),
+
+              // CONFIRM PASSWORD
+              TextField(
+                controller: _confirmPasswordCtrl,
+                obscureText: _obscureConfirmPassword,
+                decoration: InputDecoration(
+                  labelText: 'Confirm Password',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                    onPressed: () => setState(
+                      () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                    ),
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 32),
 
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: isLoading
-                      ? null
-                      : _signUp, // Loading nam disable wenawa
+                  onPressed: isLoading ? null : _signUp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryGreen,
                     shape: RoundedRectangleBorder(
@@ -146,18 +169,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     ),
                   ),
                   child: isLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 3,
-                          ),
-                        )
+                      ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
                           'Sign Up',
                           style: TextStyle(
-                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),

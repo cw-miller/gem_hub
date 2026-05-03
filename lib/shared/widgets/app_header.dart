@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:job_market/features/auth/view/login_screen.dart';
-import 'package:job_market/features/marketplace/view/notification_screen.dart';
-import 'package:job_market/features/jobs/view/PostNewJob/employer_applications_screen.dart';
+// import 'package:job_market/features/marketplace/view/notification_screen.dart';
+// import 'package:job_market/features/jobs/view/PostNewJob/employer_applications_screen.dart';
 
 class AppHeader extends StatefulWidget {
   const AppHeader({super.key});
@@ -137,12 +137,6 @@ class _AppHeaderState extends State<AppHeader> {
                 _iconButton(
                   Icons.inbox_outlined,
                   () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const EmployerApplicationsScreen(),
-                      ),
-                    );
                   },
                   isDark,
                   iconColor: const Color(0xFF3B82F6),
@@ -151,12 +145,6 @@ class _AppHeaderState extends State<AppHeader> {
                 _iconButton(
                   Icons.notifications_none,
                   () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const NotificationScreen(),
-                      ),
-                    );
                   },
                   isDark,
                 ),

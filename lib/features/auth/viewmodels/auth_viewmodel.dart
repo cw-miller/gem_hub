@@ -1,56 +1,107 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:job_market/data/repositories/auth_repository.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:job_market/data/repositories/auth/auth_repository_provider.dart';
+// 1. ADD THIS IMPORT to recognize OAuthProvider
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-final authViewModelProvider =
-    AsyncNotifierProvider.autoDispose<AuthViewModel, bool?>(() {
-      return AuthViewModel();
+part 'auth_viewmodel.g.dart';
+
+@riverpod
+class AuthViewModel extends _$AuthViewModel {
+  @override
+  FutureOr<bool?> build() {
+    // Check if user is already logged in on startup
+    final user = ref.read(authRepositoryProvider).currentUser;
+    return user != null;
+  }
+
+  Future<bool> login(String email, String password) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final repo = ref.read(authRepositoryProvider);
+      final user = await repo.login(email, password);
+      return user != null;
     });
 
-class AuthViewModel extends AutoDisposeAsyncNotifier<bool?> {
-  @override
-  bool? build() {
+    print("state value : ${state.value}");
+    return state.value ?? false;
+  }
+
+  Future<bool> signUp(String email, String password) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final repo = ref.read(authRepositoryProvider);
+      final user = await repo.signUp(email, password);
+      return user != null;
+    });
+    return state.value ?? false;
+  }
+
+  /// 2. UPDATED: Generic OAuth method for any provider
+  Future<void> signInWithOAuth(OAuthProvider provider) async {
+    state = const AsyncLoading();
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      await repo.signInWithOAuth(provider);
+      // Note: We don't set success here because the app will
+      // restart/redirect. The build() or a listener handles the new state.
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  Future<void> logout() async {
+    state = const AsyncLoading();
+    await ref.read(authRepositoryProvider).logout();
+    state = const AsyncData(false);
+  }
+
+  bool? get isLoggedIn => state.value;
+
+  String? validateLogin(String email, String password) {
+    if (email.trim().isEmpty) {
+      return 'Username is required';
+    }
+
+    if (password.isEmpty) {
+      return 'Password is required';
+    }
+
+    if (password.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+
+    return null; // no errors
+  }
+
+  String? validateSignUp(
+    String email,
+    String password,
+    String confirmPassword,
+  ) {
+    if (email.trim().isEmpty) {
+      return 'Email is required';
+    }
+
+    if (!email.contains('@')) {
+      return 'Enter a valid email';
+    }
+
+    if (password.isEmpty) {
+      return 'Password is required';
+    }
+
+    if (password.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+
+    if (confirmPassword.isEmpty) {
+      return 'Please confirm your password';
+    }
+
+    if (password != confirmPassword) {
+      return 'Passwords do not match';
+    }
+
     return null;
-  }
-
-  Future<Map<String, dynamic>?> login(String username, String password) async {
-    try {
-      state = const AsyncValue.loading(); 
-      await Future.delayed(const Duration(milliseconds: 500));
-      final repository = ref.read(authRepositoryProvider);
-      final user = await repository.login(username, password);
-
-      if (user != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('logged_in_user_id', user['username']);
-        await prefs.setString('logged_in_user_name', user['name']);
-
-        state = const AsyncValue.data(true); // Success
-        return user;
-      } else {
-        state = const AsyncValue.data(false); // Fail (Wrong credentials)
-        return null;
-      }
-    } catch (e, stackTrace) {
-      state = AsyncValue.error(e, stackTrace); // System error
-      return null;
-    }
-  }
-
-  Future<bool> signUp(String name, String username, String password) async {
-    try {
-      state = const AsyncValue.loading();
-
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final repository = ref.read(authRepositoryProvider);
-      final isSuccess = await repository.registerUser(name, username, password);
-
-      state = AsyncValue.data(isSuccess);
-      return isSuccess;
-    } catch (e, stackTrace) {
-      state = AsyncValue.error(e, stackTrace);
-      return false;
-    }
   }
 }
