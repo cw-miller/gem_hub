@@ -19,44 +19,25 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  void _signUp() async {
+  void _signUp() {
     final email = _emailCtrl.text.trim();
     final password = _passwordCtrl.text;
     final confirmPassword = _confirmPasswordCtrl.text;
 
     final vm = ref.read(authViewModelProvider.notifier);
 
-    // 🔐 VALIDATION (ViewModel)
+    // 🔐 LOCAL VALIDATION
     final error = vm.validateSignUp(email, password, confirmPassword);
-
     if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
+        SnackBar(content: Text(error), backgroundColor: Colors.orange),
       );
       return;
     }
 
-    // 🌐 SIGNUP CALL
-    final success = await vm.signUp(email, password);
-
-    if (!mounted) return;
-
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account created! Please log in.'),
-          backgroundColor: Color(0xFF10C971),
-        ),
-      );
-      context.pop();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sign up failed. Try again.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    // 🌐 TRIGGER LOGIC
+    // We don't await this because the listener below handles the result
+    vm.signUp(email, password);
   }
 
   @override
@@ -75,10 +56,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF111827) : Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -123,9 +101,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           ? Icons.visibility_off
                           : Icons.visibility,
                     ),
-                    onPressed: () => setState(
-                      () => _obscurePassword = !_obscurePassword,
-                    ),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
               ),
@@ -178,6 +155,27 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           ),
                         ),
                 ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Already have an account? ",
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      context.go('/login');
+                    },
+                    child: Text(
+                      'Login',
+                      style: TextStyle(
+                        color: primaryGreen,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

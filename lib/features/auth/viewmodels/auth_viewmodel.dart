@@ -1,65 +1,98 @@
+import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:job_market/data/repositories/auth/auth_repository_provider.dart';
-// 1. ADD THIS IMPORT to recognize OAuthProvider
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'auth_viewmodel.g.dart';
 
 @riverpod
 class AuthViewModel extends _$AuthViewModel {
+  StreamSubscription<AuthState>? _sub;
+
   @override
-  FutureOr<bool?> build() {
-    // Check if user is already logged in on startup
-    final user = ref.read(authRepositoryProvider).currentUser;
-    return user != null;
+  FutureOr<User?> build() {
+    final repo = ref.read(authRepositoryProvider);
+
+    // Listen to changes and update the state automatically
+    _sub = repo.authState.listen((data) {
+      state = AsyncData(data.session?.user);
+    });
+
+    ref.onDispose(() => _sub?.cancel());
+
+    // This becomes the initial state of authViewModelProvider
+    return repo.currentUser;
   }
 
-  Future<bool> login(String email, String password) async {
+  /// LOGIN
+  Future<void> login(String email, String password) async {
     state = const AsyncLoading();
+
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
       final user = await repo.login(email, password);
-      return user != null;
-    });
 
-    print("state value : ${state.value}");
-    return state.value ?? false;
+      if (user == null) {
+        throw Exception("Login failed");
+      }
+
+      return user;
+    });
   }
 
-  Future<bool> signUp(String email, String password) async {
+  /// SIGN UP
+  Future<void> signUp(String email, String password) async {
     state = const AsyncLoading();
+
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
       final user = await repo.signUp(email, password);
-      return user != null;
+
+      if (user == null) {
+        throw Exception("Signup failed");
+      }
+
+      return user;
     });
-    return state.value ?? false;
   }
 
-  /// 2. UPDATED: Generic OAuth method for any provider
+  /// OAUTH LOGIN
   Future<void> signInWithOAuth(OAuthProvider provider) async {
     state = const AsyncLoading();
+
     try {
       final repo = ref.read(authRepositoryProvider);
       await repo.signInWithOAuth(provider);
-      // Note: We don't set success here because the app will
-      // restart/redirect. The build() or a listener handles the new state.
+      // No manual state update — handled by authState listener
     } catch (e, st) {
       state = AsyncError(e, st);
     }
   }
 
+  /// LOGOUT
   Future<void> logout() async {
     state = const AsyncLoading();
+
     await ref.read(authRepositoryProvider).logout();
-    state = const AsyncData(false);
+
+    // Listener will also update this, but we set it immediately
+    state = const AsyncData(null);
   }
 
-  bool? get isLoggedIn => state.value;
+  /// Derived state
+  bool get isLoggedIn => state.value != null;
+
+  // ============================
+  // ✅ VALIDATION METHODS
+  // ============================
 
   String? validateLogin(String email, String password) {
     if (email.trim().isEmpty) {
-      return 'Username is required';
+      return 'Email is required';
+    }
+
+    if (!email.contains('@')) {
+      return 'Enter a valid email';
     }
 
     if (password.isEmpty) {
@@ -70,7 +103,7 @@ class AuthViewModel extends _$AuthViewModel {
       return 'Password must be at least 6 characters';
     }
 
-    return null; // no errors
+    return null;
   }
 
   String? validateSignUp(

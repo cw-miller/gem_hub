@@ -21,16 +21,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
-
-     ref.listenManual(authViewModelProvider, (prev, next) {
-      next.whenOrNull(
-        data: (success) {
-          if (success == true && mounted) {
-            context.go('/jobs');
-          }
-        },
-      );
-    });
   }
 
   void _login() async {
@@ -184,7 +174,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        context.push('/signup');
+                        context.go('/signup');
                       },
                       child: Text(
                         'Sign Up',

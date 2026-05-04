@@ -11,8 +11,12 @@ class AuthRepository {
       email: email,
       password: password,
     );
-    print("user : ${res.user}");
-    print("session : ${res.session}");
+
+    // Ensure session is valid
+    if (res.session == null) {
+      throw Exception("Login failed: No active session");
+    }
+
     return res.user;
   }
 
@@ -22,11 +26,11 @@ class AuthRepository {
       email: email,
       password: password,
     );
-    print(res);
+
     return res.user;
   }
 
-  /// 🔥 OAUTH LOGIN (Google, GitHub, etc.)
+  /// OAUTH LOGIN
   Future<void> signInWithOAuth(OAuthProvider provider) async {
     await _client.auth.signInWithOAuth(
       provider,
@@ -39,9 +43,15 @@ class AuthRepository {
     await _client.auth.signOut();
   }
 
-  /// CURRENT USER
+  /// CURRENT USER (non-reactive)
   User? get currentUser => _client.auth.currentUser;
 
-  /// AUTH STATE STREAM
+  /// CURRENT SESSION
+  Session? get currentSession => _client.auth.currentSession;
+
+  /// AUTH STATE STREAM (reactive 🔥)
   Stream<AuthState> get authState => _client.auth.onAuthStateChange;
+
+  /// Quick check (non-reactive)
+  bool get isLoggedIn => _client.auth.currentSession != null;
 }

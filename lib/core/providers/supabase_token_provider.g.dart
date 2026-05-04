@@ -9,43 +9,35 @@ part of 'supabase_token_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(accessToken)
-final accessTokenProvider = AccessTokenProvider._();
+@ProviderFor(accessTokenStream)
+final accessTokenStreamProvider = AccessTokenStreamProvider._();
 
-final class AccessTokenProvider
-    extends $FunctionalProvider<String?, String?, String?>
-    with $Provider<String?> {
-  AccessTokenProvider._()
+final class AccessTokenStreamProvider
+    extends $FunctionalProvider<AsyncValue<String?>, String?, Stream<String?>>
+    with $FutureModifier<String?>, $StreamProvider<String?> {
+  AccessTokenStreamProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'accessTokenProvider',
+        name: r'accessTokenStreamProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$accessTokenHash();
+  String debugGetCreateSourceHash() => _$accessTokenStreamHash();
 
   @$internal
   @override
-  $ProviderElement<String?> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $StreamProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
 
   @override
-  String? create(Ref ref) {
-    return accessToken(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(String? value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<String?>(value),
-    );
+  Stream<String?> create(Ref ref) {
+    return accessTokenStream(ref);
   }
 }
 
-String _$accessTokenHash() => r'e574850aa897d5d5c1af4aaa42283ce71026caea';
+String _$accessTokenStreamHash() => r'5164ce7da8069d0e01d1019e4135e817ced93387';

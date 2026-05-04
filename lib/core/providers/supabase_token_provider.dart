@@ -4,9 +4,7 @@ import 'package:job_market/core/providers/supabase_provider.dart';
 part 'supabase_token_provider.g.dart';
 
 @riverpod
-String? accessToken(Ref ref) {
+Stream<String?> accessTokenStream(Ref ref) {
   final client = ref.watch(supabaseProvider);
-
-  final session = client.auth.currentSession;
-  return session?.accessToken;
+  return client.auth.onAuthStateChange.map((data) => data.session?.accessToken);
 }

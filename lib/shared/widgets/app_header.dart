@@ -1,35 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:job_market/features/auth/view/login_screen.dart';
-// import 'package:job_market/features/marketplace/view/notification_screen.dart';
-// import 'package:job_market/features/jobs/view/PostNewJob/employer_applications_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:job_market/features/auth/viewmodels/auth_viewmodel.dart';
+import 'package:go_router/go_router.dart';
 
-class AppHeader extends StatefulWidget {
+// Import your auth provider path here
+// import 'package:job_market/features/auth/providers/auth_provider.dart'; 
+
+class AppHeader extends ConsumerStatefulWidget {
   const AppHeader({super.key});
 
   @override
-  State<AppHeader> createState() => _AppHeaderState();
+  ConsumerState<AppHeader> createState() => _AppHeaderState();
 }
 
-class _AppHeaderState extends State<AppHeader> {
-  bool _isLoggedIn = false;
-  String _userName = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAuthState();
-  }
-
-  Future<void> _loadAuthState() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
-      setState(() {
-        _isLoggedIn = prefs.getString('logged_in_user_id') != null;
-        _userName = prefs.getString('logged_in_user_name') ?? '';
-      });
-    }
-  }
+class _AppHeaderState extends ConsumerState<AppHeader> {
+  // We no longer need _isLoggedIn or _userName as local state
+  // because we will read them directly from the provider.
 
   void _showLogoutDialog(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
@@ -60,12 +46,10 @@ class _AppHeaderState extends State<AppHeader> {
               backgroundColor: const Color(0xFFEF4444),
             ),
             onPressed: () async {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.clear();
+              // Call your logout logic from the ViewModel
+              await ref.read(authViewModelProvider.notifier).logout();
               if (ctx.mounted) {
                 Navigator.pop(ctx);
-                // Refresh the header state
-                _loadAuthState();
               }
             },
             child: const Text('Log Out', style: TextStyle(color: Colors.white)),
@@ -77,6 +61,13 @@ class _AppHeaderState extends State<AppHeader> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch the auth state. This widget will now rebuild automatically 
+    // whenever the user logs in or out.
+    final authState = ref.watch(authViewModelProvider);
+    final user = authState.value;
+    final bool isLoggedIn = user != null;
+    final String userName = 'Test'; // Adjust based on your User model fields
+
     bool isDark = Theme.of(context).brightness == Brightness.dark;
     double screenWidth = MediaQuery.of(context).size.width;
     double iconSpacing = screenWidth < 360 ? 4.0 : 8.0;
@@ -88,12 +79,12 @@ class _AppHeaderState extends State<AppHeader> {
           // Avatar
           CircleAvatar(
             radius: 20,
-            backgroundImage: _isLoggedIn
+            backgroundImage: isLoggedIn
                 ? const NetworkImage('https://i.pravatar.cc/150?img=32')
                 : null,
             backgroundColor:
                 isDark ? const Color(0xFF374151) : Colors.grey[300],
-            child: !_isLoggedIn
+            child: !isLoggedIn
                 ? const Icon(Icons.person, color: Colors.grey, size: 20)
                 : null,
           ),
@@ -105,8 +96,8 @@ class _AppHeaderState extends State<AppHeader> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _isLoggedIn
-                      ? 'Welcome Back${_userName.isNotEmpty ? ', $_userName' : ''}!'
+                  isLoggedIn
+                      ? 'Welcome Back${userName.isNotEmpty ? ', $userName' : ''}!'
                       : 'Welcome, Guest',
                   style: TextStyle(
                     fontSize: screenWidth < 360 ? 16 : 18,
@@ -133,39 +124,32 @@ class _AppHeaderState extends State<AppHeader> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (_isLoggedIn) ...[
+              if (isLoggedIn) ...[
                 _iconButton(
                   Icons.inbox_outlined,
-                  () {
-                  },
+                  () {},
                   isDark,
                   iconColor: const Color(0xFF3B82F6),
                 ),
                 SizedBox(width: iconSpacing),
                 _iconButton(
                   Icons.notifications_none,
-                  () {
-                  },
+                  () {},
                   isDark,
                 ),
                 SizedBox(width: iconSpacing),
               ],
               _iconButton(
-                _isLoggedIn ? Icons.logout : Icons.login,
+                isLoggedIn ? Icons.logout : Icons.login,
                 () {
-                  if (_isLoggedIn) {
+                  if (isLoggedIn) {
                     _showLogoutDialog(context);
                   } else {
-                    // Navigate to login and refresh header state on return
-                    Navigator.of(context, rootNavigator: true)
-                        .push(MaterialPageRoute(
-                          builder: (_) => const LoginScreen(),
-                        ))
-                        .then((_) => _loadAuthState());
+                    context.go('/login');
                   }
                 },
                 isDark,
-                iconColor: _isLoggedIn
+                iconColor: isLoggedIn
                     ? const Color(0xFFEF4444).withOpacity(0.9)
                     : const Color(0xFF10C971),
               ),
