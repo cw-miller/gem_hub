@@ -1,34 +1,40 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:job_market/data/models/auth/profile_model.dart';
+import 'package:flutter/foundation.dart'; // For debugPrint
 
 class AuthRepository {
   final SupabaseClient _client;
 
   AuthRepository(this._client);
 
-  /// EMAIL LOGIN
+  // ==========================================
+  // ✅ AUTH ACTIONS
+  // ==========================================
+
+  /// Signs in a user with email and password.
   Future<User?> login(String email, String password) async {
     final res = await _client.auth.signInWithPassword(
       email: email,
       password: password,
     );
 
-    // Ensure session is valid
     if (res.session == null) {
-      throw Exception("Login failed: No active session");
+      throw Exception("Login failed: No active session created.");
     }
 
     return res.user;
   }
 
-  /// SIGN UP
+  /// Registers a new user with email and password.
   Future<User?> signUp(String email, String password) async {
-    final res = await _client.auth.signUp(email: email, password: password);
-
+    final res = await _client.auth.signUp(
+      email: email, 
+      password: password,
+    );
     return res.user;
   }
 
-  /// OAUTH LOGIN
+  /// Initiates OAuth login flow (e.g., Google, Apple).
   Future<void> signInWithOAuth(OAuthProvider provider) async {
     await _client.auth.signInWithOAuth(
       provider,
@@ -36,47 +42,51 @@ class AuthRepository {
     );
   }
 
-  /// LOGOUT
+  /// Signs out the current user and clears the session.
   Future<void> logout() async {
     await _client.auth.signOut();
   }
 
+  // ==========================================
+  // ✅ PROFILE DATA
+  // ==========================================
+
+  /// Fetches profile metadata from the 'profiles' table for a specific user ID.
   Future<ProfileUser?> getUserProfile(String userId) async {
-  try {
-    final response = await _client
-        .from('profiles')
-        .select()
-        .eq('profile_id', userId)
-        .maybeSingle();
+    try {
+      final response = await _client
+          .from('profiles')
+          .select()
+          .eq('profile_id', userId)
+          .maybeSingle();
 
-    print('RAW DATABASE DATA: $response');
+      if (response == null) {
+        debugPrint('AuthRepository: No profile found for UID: $userId');
+        return null;
+      }
 
-    if (response == null) {
-      print('Query returned nothing for ID: $userId');
+      return ProfileUser.fromMap(response);
+    } catch (e, stacktrace) {
+      debugPrint('AuthRepository Error: Fetching profile failed.');
+      debugPrint('Exception: $e');
+      debugPrint('Stacktrace: $stacktrace');
       return null;
     }
-
-    // This is the line that is likely failing
-    final model = ProfileUser.fromMap(response);
-    print('MAPPING SUCCESS: ${model.username}');
-    return model;
-    
-  } catch (e, stacktrace) {
-    print('CRASH DURING FETCH/MAP: $e');
-    print('STACKTRACE: $stacktrace');
-    return null;
   }
-}
 
-  /// CURRENT USER (non-reactive)
-  User? get currentUser => _client.auth.currentUser;
+  // ==========================================
+  // ✅ REACTIVE & GETTERS
+  // ==========================================
 
-  /// CURRENT SESSION
-  Session? get currentSession => _client.auth.currentSession;
-
-  /// AUTH STATE STREAM (reactive 🔥)
+  /// Stream of Auth changes (Login, Logout, Token Refresh).
   Stream<AuthState> get authState => _client.auth.onAuthStateChange;
 
-  /// Quick check (non-reactive)
+  /// Returns the current Supabase [User] object if a session exists.
+  User? get currentUser => _client.auth.currentUser;
+
+  /// Returns the current [Session] metadata.
+  Session? get currentSession => _client.auth.currentSession;
+
+  /// Synchronous check to see if the user is currently authenticated.
   bool get isLoggedIn => _client.auth.currentSession != null;
 }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:job_market/features/auth/viewmodels/auth_viewmodel.dart';
 import 'package:go_router/go_router.dart';
+import 'package:job_market/features/auth/viewmodel/auth_viewmodel.dart';
+import 'package:job_market/features/auth/provider/session_provider.dart'; // Import sessionProvider
 
 class AppHeader extends ConsumerStatefulWidget {
   const AppHeader({super.key});
@@ -11,7 +12,6 @@ class AppHeader extends ConsumerStatefulWidget {
 }
 
 class _AppHeaderState extends ConsumerState<AppHeader> {
-  
   void _showLogoutDialog(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -42,12 +42,9 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () async {
-              // 1. DISMISS DIALOG FIRST
-              // This prevents the GoRouter conflict/crash
+              // Dismiss dialog immediately
               Navigator.of(ctx).pop();
-
-              // 2. TRIGGER LOGOUT
-              // The RouterNotifier will automatically catch this and redirect to /login
+              // Trigger logout (RouterNotifier handles the redirect)
               await ref.read(authViewModelProvider.notifier).logout();
             },
             child: const Text('Log Out', style: TextStyle(color: Colors.white)),
@@ -59,8 +56,13 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
 
   @override
   Widget build(BuildContext context) {
+    // 1. WATCH SESSION DATA (Stable UI)
+    final sessionAsync = ref.watch(sessionProvider);
+    final user = sessionAsync.value;
+    
+    // 2. WATCH AUTH VIEWMODEL (Only for loading/action status)
     final authState = ref.watch(authViewModelProvider);
-    final user = authState.value;
+
     final bool isLoggedIn = user?.supabaseUser != null;
     final String userName = user?.profile?.username ?? '';
 
@@ -119,7 +121,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
             children: [
               if (isLoggedIn) ...[
                 _iconButton(Icons.notifications_none, () {
-                  // TODO: Add notification logic
+                  // Notification Logic
                 }, isDark),
                 SizedBox(width: iconSpacing),
               ],
@@ -130,11 +132,12 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                   if (isLoggedIn) {
                     _showLogoutDialog(context);
                   } else {
-                    // Only redirect for login; logout is handled by the dialog
                     context.go('/login');
                   }
                 },
                 isDark,
+                // Disable button if ViewModel is currently processing (e.g., logging out)
+                isLoading: authState.isLoading,
                 iconColor: isLoggedIn
                     ? const Color(0xFFEF4444).withOpacity(0.9)
                     : const Color(0xFF10C971),
@@ -151,6 +154,7 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
     VoidCallback onTap,
     bool isDark, {
     Color? iconColor,
+    bool isLoading = false,
   }) {
     return Container(
       width: 38,
@@ -168,15 +172,20 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                 ),
               ],
       ),
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        icon: Icon(
-          icon,
-          color: iconColor ?? (isDark ? Colors.white : Colors.grey[800]),
-          size: 20,
-        ),
-        onPressed: onTap,
-      ),
+      child: isLoading
+          ? const Padding(
+              padding: EdgeInsets.all(10.0),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : IconButton(
+              padding: EdgeInsets.zero,
+              icon: Icon(
+                icon,
+                color: iconColor ?? (isDark ? Colors.white : Colors.grey[800]),
+                size: 20,
+              ),
+              onPressed: onTap,
+            ),
     );
   }
 }
