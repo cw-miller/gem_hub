@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:job_market/data/models/auth/profile_model.dart';
 
 class AuthRepository {
   final SupabaseClient _client;
@@ -22,10 +23,7 @@ class AuthRepository {
 
   /// SIGN UP
   Future<User?> signUp(String email, String password) async {
-    final res = await _client.auth.signUp(
-      email: email,
-      password: password,
-    );
+    final res = await _client.auth.signUp(email: email, password: password);
 
     return res.user;
   }
@@ -42,6 +40,33 @@ class AuthRepository {
   Future<void> logout() async {
     await _client.auth.signOut();
   }
+
+  Future<ProfileUser?> getUserProfile(String userId) async {
+  try {
+    final response = await _client
+        .from('profiles')
+        .select()
+        .eq('profile_id', userId)
+        .maybeSingle();
+
+    print('RAW DATABASE DATA: $response');
+
+    if (response == null) {
+      print('Query returned nothing for ID: $userId');
+      return null;
+    }
+
+    // This is the line that is likely failing
+    final model = ProfileUser.fromMap(response);
+    print('MAPPING SUCCESS: ${model.username}');
+    return model;
+    
+  } catch (e, stacktrace) {
+    print('CRASH DURING FETCH/MAP: $e');
+    print('STACKTRACE: $stacktrace');
+    return null;
+  }
+}
 
   /// CURRENT USER (non-reactive)
   User? get currentUser => _client.auth.currentUser;

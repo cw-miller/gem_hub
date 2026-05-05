@@ -6,7 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:job_market/features/navigation/view/main_navigation.dart';
 import 'package:job_market/features/marketplace/view/job_market.dart';
 import 'package:job_market/features/gem_market/view/gem_market.dart';
-import 'package:job_market/features/jobs/view/admin_screen.dart';
+import 'package:job_market/features/auth/view/admin_screen.dart';
 import 'package:job_market/features/auth/view/login_screen.dart';
 import 'package:job_market/features/auth/view/sign_up_screen.dart';
 import 'package:job_market/core/router/router_notifier.dart';
@@ -23,9 +23,10 @@ GoRouter router(Ref ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/gems',
-    refreshListenable: notifier, // 🔄 This tells GoRouter to refresh on auth changes
-    redirect: notifier.redirect,   // 🛡️ This runs the auth logic
-    
+    refreshListenable:
+        notifier, // 🔄 This tells GoRouter to refresh on auth changes
+    redirect: notifier.redirect, // 🛡️ This runs the auth logic
+
     routes: [
       GoRoute(
         path: '/login',
@@ -37,7 +38,12 @@ GoRouter router(Ref ref) {
         name: 'signup',
         builder: (context, state) => const SignUpScreen(),
       ),
-      
+      GoRoute(
+        path: '/admin',
+        name: 'admin',
+        builder: (context, state) => const AdminReviewScreen(),
+      ),
+
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) => MainNavigation(child: child),
@@ -56,11 +62,6 @@ GoRouter router(Ref ref) {
             path: '/profile',
             name: 'profile',
             builder: (context, state) => const JobMarketplaceScreen(),
-          ),
-          GoRoute(
-            path: '/admin',
-            name: 'admin',
-            builder: (context, state) => const AdminJobReviewScreen(),
           ),
         ],
       ),

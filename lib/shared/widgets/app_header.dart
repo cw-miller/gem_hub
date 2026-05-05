@@ -3,9 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:job_market/features/auth/viewmodels/auth_viewmodel.dart';
 import 'package:go_router/go_router.dart';
 
-// Import your auth provider path here
-// import 'package:job_market/features/auth/providers/auth_provider.dart'; 
-
 class AppHeader extends ConsumerStatefulWidget {
   const AppHeader({super.key});
 
@@ -14,9 +11,7 @@ class AppHeader extends ConsumerStatefulWidget {
 }
 
 class _AppHeaderState extends ConsumerState<AppHeader> {
-  // We no longer need _isLoggedIn or _userName as local state
-  // because we will read them directly from the provider.
-
+  
   void _showLogoutDialog(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -44,13 +39,16 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () async {
-              // Call your logout logic from the ViewModel
+              // 1. DISMISS DIALOG FIRST
+              // This prevents the GoRouter conflict/crash
+              Navigator.of(ctx).pop();
+
+              // 2. TRIGGER LOGOUT
+              // The RouterNotifier will automatically catch this and redirect to /login
               await ref.read(authViewModelProvider.notifier).logout();
-              if (ctx.mounted) {
-                Navigator.pop(ctx);
-              }
             },
             child: const Text('Log Out', style: TextStyle(color: Colors.white)),
           ),
@@ -61,12 +59,10 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch the auth state. This widget will now rebuild automatically 
-    // whenever the user logs in or out.
     final authState = ref.watch(authViewModelProvider);
     final user = authState.value;
-    final bool isLoggedIn = user != null;
-    final String userName = 'Test'; // Adjust based on your User model fields
+    final bool isLoggedIn = user?.supabaseUser != null;
+    final String userName = user?.profile?.username ?? '';
 
     bool isDark = Theme.of(context).brightness == Brightness.dark;
     double screenWidth = MediaQuery.of(context).size.width;
@@ -82,15 +78,14 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
             backgroundImage: isLoggedIn
                 ? const NetworkImage('https://i.pravatar.cc/150?img=32')
                 : null,
-            backgroundColor:
-                isDark ? const Color(0xFF374151) : Colors.grey[300],
+            backgroundColor: isDark ? const Color(0xFF374151) : Colors.grey[300],
             child: !isLoggedIn
                 ? const Icon(Icons.person, color: Colors.grey, size: 20)
                 : null,
           ),
           const SizedBox(width: 10),
 
-          // Greeting
+          // Greeting Column
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,38 +108,29 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
                     fontSize: screenWidth < 360 ? 11 : 12,
                     color: isDark ? Colors.grey[400] : Colors.grey[600],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
 
-          // Action icons
+          // Action Buttons
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (isLoggedIn) ...[
-                _iconButton(
-                  Icons.inbox_outlined,
-                  () {},
-                  isDark,
-                  iconColor: const Color(0xFF3B82F6),
-                ),
-                SizedBox(width: iconSpacing),
-                _iconButton(
-                  Icons.notifications_none,
-                  () {},
-                  isDark,
-                ),
+                _iconButton(Icons.notifications_none, () {
+                  // TODO: Add notification logic
+                }, isDark),
                 SizedBox(width: iconSpacing),
               ],
+
               _iconButton(
                 isLoggedIn ? Icons.logout : Icons.login,
                 () {
                   if (isLoggedIn) {
                     _showLogoutDialog(context);
                   } else {
+                    // Only redirect for login; logout is handled by the dialog
                     context.go('/login');
                   }
                 },
@@ -167,8 +153,8 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
     Color? iconColor,
   }) {
     return Container(
-      width: 36,
-      height: 36,
+      width: 38,
+      height: 38,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1F2937) : Colors.white,
         shape: BoxShape.circle,
@@ -190,7 +176,6 @@ class _AppHeaderState extends ConsumerState<AppHeader> {
           size: 20,
         ),
         onPressed: onTap,
-        splashRadius: 18,
       ),
     );
   }

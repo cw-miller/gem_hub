@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:job_market/data/repositories/auth/auth_repository_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:job_market/data/models/auth/auth_state.dart';
+import 'package:job_market/data/models/auth/profile_model.dart';
 
 part 'auth_viewmodel.g.dart';
 
@@ -10,49 +12,76 @@ class AuthViewModel extends _$AuthViewModel {
   StreamSubscription<AuthState>? _sub;
 
   @override
-  FutureOr<User?> build() {
+  FutureOr<AuthenticatedUser> build() async {
     final repo = ref.read(authRepositoryProvider);
 
-    // Listen to changes and update the state automatically
-    _sub = repo.authState.listen((data) {
-      state = AsyncData(data.session?.user);
+    _sub = repo.authState.listen((data) async {
+      final supabaseUser = data.session?.user;
+
+      if (supabaseUser == null) {
+        state = AsyncData(AuthenticatedUser(supabaseUser: null, profile: null));
+      } else {
+        state = const AsyncLoading();
+        state = await AsyncValue.guard(() async {
+          final profile = await _fillProfile(supabaseUser);
+          return AuthenticatedUser(
+            supabaseUser: supabaseUser,
+            profile: profile,
+          );
+        });
+      }
     });
 
     ref.onDispose(() => _sub?.cancel());
 
-    // This becomes the initial state of authViewModelProvider
-    return repo.currentUser;
+    final currentUser = repo.currentUser;
+    final profile = await _fillProfile(currentUser);
+    return AuthenticatedUser(supabaseUser: currentUser, profile: profile);
   }
 
-  /// LOGIN
+  Future<ProfileUser?> _fillProfile(User? supabaseUser) async {
+    if (supabaseUser == null) return null;
+    final repo = ref.read(authRepositoryProvider);
+    try {
+      return await repo.getUserProfile(supabaseUser.id);
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<void> login(String email, String password) async {
     state = const AsyncLoading();
-
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
-      final user = await repo.login(email, password);
 
-      if (user == null) {
-        throw Exception("Login failed");
+      // Step A: Auth Check
+      final user = await repo.login(email, password);
+      print('DEBUG: Step A - Supabase Auth successful for UID: ${user?.id}');
+
+      // Step B: Profile Check
+      final profile = await _fillProfile(user);
+      if (profile == null) {
+        print(
+          'DEBUG: Step B - FAILED. Auth was successful, but NO PROFILE was found in the DB.',
+        );
+        throw Exception('Profile not found. Please contact support.');
       }
 
-      return user;
+      print('DEBUG: Step C - Profile loaded with role: ${profile.role}');
+      return AuthenticatedUser(supabaseUser: user, profile: profile);
     });
   }
 
   /// SIGN UP
   Future<void> signUp(String email, String password) async {
     state = const AsyncLoading();
-
     state = await AsyncValue.guard(() async {
       final repo = ref.read(authRepositoryProvider);
       final user = await repo.signUp(email, password);
-
-      if (user == null) {
-        throw Exception("Signup failed");
-      }
-
-      return user;
+      // After signup, the listener usually picks up the session,
+      // but we return the state here to complete the Guard.
+      final profile = await _fillProfile(user);
+      return AuthenticatedUser(supabaseUser: user, profile: profile);
     });
   }
 
@@ -72,11 +101,8 @@ class AuthViewModel extends _$AuthViewModel {
   /// LOGOUT
   Future<void> logout() async {
     state = const AsyncLoading();
-
     await ref.read(authRepositoryProvider).logout();
-
-    // Listener will also update this, but we set it immediately
-    state = const AsyncData(null);
+    state = AsyncData(AuthenticatedUser(supabaseUser: null, profile: null));
   }
 
   /// Derived state

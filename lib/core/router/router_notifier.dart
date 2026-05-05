@@ -2,7 +2,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:job_market/features/auth/viewmodels/auth_viewmodel.dart';
 import 'package:flutter/material.dart'; // For ChangeNotifier and BuildContext
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:job_market/core/enums/user_role.dart';
+import 'package:job_market/data/models/auth/auth_state.dart';
 
 part 'router_notifier.g.dart';
 
@@ -20,28 +21,37 @@ class RouterNotifier extends ChangeNotifier {
     // which tells GoRouter to re-run its redirect logic.
     _ref.listen(authViewModelProvider, (_, __) => notifyListeners());
   }
-
   String? redirect(BuildContext context, GoRouterState state) {
     final authState = _ref.read(authViewModelProvider);
+    if (authState.isLoading && authState.value == null) return null;
 
-    // CRITICAL: If the provider is still in its very first load,
-    // do NOT redirect. Stay on the splash/initial screen.
-    print(authState);
-    if (authState.isLoading && authState.value == null) {
-      return null;
-    }
+    final AuthenticatedUser? user = authState.value;
+    final bool isAuth = user?.supabaseUser != null;
+    final userRole = user
+        ?.profile
+        ?.role; // Ensure your Profile model maps 'role' string to Enum
 
-    final bool isLoggedIn = authState.value != null;
     final String path = state.uri.path;
     final bool isGuestPage = path == '/login' || path == '/signup';
 
-    // Only act once we are SURE we aren't loading the initial session
-    if (!isLoggedIn) {
+    if (!isAuth) {
       return isGuestPage ? null : '/login';
     }
 
-    if (isLoggedIn && isGuestPage) {
-      return '/gems';
+    if (isAuth) {
+      // If we have a session but profile failed to load
+      if (userRole == null) {
+        print('Router Warning: User is Authenticated but Role is NULL');
+        return null;
+      }
+
+      if (isGuestPage || path == '/') {
+        return (userRole == UserRole.ADMIN) ? '/admin' : '/gems';
+      }
+
+      if (path.startsWith('/admin') && userRole != UserRole.ADMIN) {
+        return '/gems';
+      }
     }
 
     return null;
