@@ -21,10 +21,6 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Pre-populate with the main image and dummy placeholders for the carousel
-    _images = [
-      widget.gem.imageUrl,
-    ];
   }
 
   @override
