@@ -1,7 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:job_market/core/enums/gem_type.dart';
+import 'package:job_market/core/enums/gem_status.dart';
 import 'package:job_market/data/models/gem_market/gem_model.dart';
 import 'package:job_market/features/gem_market/viewmodel/gem_marketplace_viewmodel.dart';
 import 'gem_marketplace_widgets.dart';
@@ -409,7 +411,7 @@ class _GemMarketPlaceScreenState extends ConsumerState<GemMarketPlaceScreen> {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 0.72,
+            childAspectRatio: 0.75,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
           ),
@@ -423,6 +425,16 @@ class _GemMarketPlaceScreenState extends ConsumerState<GemMarketPlaceScreen> {
   Widget _buildGemCard(Gem gem) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Status colors
+    Color statusColor;
+    if (gem.status == GemStatus.APPROVED) {
+      statusColor = const Color(0xFF10B981);
+    } else if (gem.status == GemStatus.REJECTED) {
+      statusColor = const Color(0xFFEF4444);
+    } else {
+      statusColor = const Color(0xFFF59E0B);
+    }
+
     return GestureDetector(
       onTap: () => Navigator.of(
         context,
@@ -431,64 +443,92 @@ class _GemMarketPlaceScreenState extends ConsumerState<GemMarketPlaceScreen> {
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1F2937) : _T.card,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: isDark ? const Color(0xFF374151) : _T.border,
+            color: isDark ? const Color(0xFF374151) : Colors.black.withOpacity(0.03),
+            width: 1,
           ),
           boxShadow: [
             BoxShadow(
               color: isDark
-                  ? Colors.black.withOpacity(0.12)
-                  : Colors.black.withOpacity(0.05),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
+                  ? Colors.black.withOpacity(0.3)
+                  : Colors.black.withOpacity(0.04),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image area
+            // Image area with Overlays
             Expanded(
+              flex: 4,
               child: Stack(
                 children: [
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(20),
+                      top: Radius.circular(28),
                     ),
                     child: gem.imageUrl != null && gem.imageUrl!.isNotEmpty
                         ? Image.network(
                             gem.imageUrl!,
                             width: double.infinity,
+                            height: double.infinity,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                _buildPlaceholder(), // Extract this to a method
+                            errorBuilder: (_, __, ___) => _buildPlaceholder(),
                           )
                         : _buildPlaceholder(),
+                  ),
+                  // Status Badge
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.75),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            gem.status.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   // Favourite button
                   Positioned(
                     top: 10,
                     right: 10,
-                    child: GestureDetector(
-                      onTap: () {},
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.favorite_border_rounded,
-                          color: _T.subText,
-                          size: 16,
+                    child: ClipOval(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.65),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.favorite_border_rounded,
+                            color: Color(0xFF111827),
+                            size: 20,
+                          ),
                         ),
                       ),
                     ),
@@ -496,57 +536,44 @@ class _GemMarketPlaceScreenState extends ConsumerState<GemMarketPlaceScreen> {
                 ],
               ),
             ),
-            // Info
+            // Content
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    gem.name.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      color: _T.gold,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
                     gem.name,
                     style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
                       color: isDark ? Colors.white : _T.text,
+                      letterSpacing: -0.4,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '\$${_fmt(gem.price)}',
+                        '${gem.carat ?? 0} CT',
                         style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: _T.accent,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: _T.gold,
+                          letterSpacing: 0.5,
                         ),
                       ),
-                      const Row(
-                        children: [
-                          Icon(Icons.star_rounded, color: _T.gold, size: 13),
-                          SizedBox(width: 2),
-                          Text(
-                            '5.0',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: _T.subText,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                      const Spacer(),
+                      Text(
+                        'LKR ${_fmt(gem.price)}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: _T.accent,
+                        ),
                       ),
                     ],
                   ),

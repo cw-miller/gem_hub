@@ -51,14 +51,11 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    GemOwnerActionTab(gem: widget.gem),
                     GemTitleSection(gem: widget.gem),
-                    _buildDivider(),
                     GemSellerSection(gem: widget.gem),
-                    _buildDivider(),
                     GemSpecificationsSection(gem: widget.gem),
-                    _buildDivider(),
                     GemDescriptionSection(gem: widget.gem),
-                    _buildDivider(),
                     GemLocationSection(gem: widget.gem),
                     const SizedBox(height: 100), // space for bottom bar
                   ],

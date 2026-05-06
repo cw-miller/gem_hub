@@ -10,6 +10,9 @@ class Gem {
   final String? imageUrl;
   final String? location;
   final String? sellerPhone;
+  final String? variety;
+  final String? color;
+  final String? certificateUrl;
   final GemStatus status;
 
   Gem({
@@ -22,6 +25,9 @@ class Gem {
     this.imageUrl,
     this.location,
     this.sellerPhone,
+    this.variety,
+    this.color,
+    this.certificateUrl,
     this.status = GemStatus.PENDING,
   });
 
@@ -38,6 +44,9 @@ class Gem {
       imageUrl: map['image_url'],
       location: map['location'],
       sellerPhone: map['seller_phone'],
+      variety: map['variety'],
+      color: map['color'],
+      certificateUrl: map['certificate_url'],
       status: GemStatus.fromString(map['status']),
     );
   }
@@ -52,6 +61,9 @@ class Gem {
       'image_url': imageUrl,
       'location': location,
       'seller_phone': sellerPhone,
+      'variety': variety,
+      'color': color,
+      'certificate_url': certificateUrl,
       'status': status.name.toLowerCase(), 
     };
   }

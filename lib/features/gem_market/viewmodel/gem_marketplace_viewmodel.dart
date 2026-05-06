@@ -59,5 +59,6 @@ class GemMarketplaceViewModel extends _$GemMarketplaceViewModel {
     }
   }
   
-  // ... updateGem and deleteGem follow the same logic as addGem
+  // updateGem and deleteGem follow the same logic as addGem
+  void updateType(dynamic type) {}
 }
