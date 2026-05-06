@@ -13,31 +13,38 @@ class SupabaseAuthInterceptor extends Interceptor {
     final supabase = Supabase.instance.client;
     final session = supabase.auth.currentSession;
 
-    // 1. Proactive Refresh: If the token is expired, refresh it before sending the request
+    // 1. Proactive Refresh
     if (session != null && session.isExpired) {
       try {
         await supabase.auth.refreshSession();
       } catch (_) {
-        // If refresh fails, let the request proceed; Django will return 401
-      } 
+        // Continue anyway; the backend will catch an invalid token
+      }
     }
 
-    // 2. Read the latest token from our provider
-    final token = _ref.read(currentAccessTokenProvider);
-
-    if (token != null) {
-      options.headers['Authorization'] = 'Bearer $token';
+    // 2. SAFETY CHECK: The "Async Gap"
+    // Since 'Ref' doesn't have '.mounted', we check if the container 
+    // still has this provider active before reading.
+    try {
+      final token = _ref.read(currentAccessTokenProvider);
+      if (token != null) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+    } catch (e) {
+      // If we hit this, the provider was likely disposed during the await.
+      // We log it and let the request go through (or fail gracefully).
+      print('SupabaseAuthInterceptor: Ref was disposed during async gap.');
     }
 
-    // Continue the request
     return handler.next(options);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    // Optional: Global error handling (e.g., redirect to login on 401)
+    // If the Django backend rejects the token (401), 
+    // it's a signal the session is totally dead.
     if (err.response?.statusCode == 401) {
-      // Handle unauthorized error
+      print('Auth Error: 401 Unauthorized from backend.');
     }
     return handler.next(err);
   }

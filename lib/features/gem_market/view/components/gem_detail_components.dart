@@ -11,10 +11,13 @@ class GemDetailTheme {
   static const subText = Color(0xFF6B7280);
   static const sectionDivider = Color(0xFFE5E7EB);
 
-  static String formatPrice(double v) => v.toStringAsFixed(2).replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?=\.))'),
-        (m) => '${m[1]},',
-      );
+  static String formatPrice(double? v) {
+    if (v == null) return '0.00';
+    return v.toStringAsFixed(2).replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?=\.))'),
+          (m) => '${m[1]},',
+        );
+  }
 }
 
 // ─── App Bar & Carousel ───────────────────────────────────────────────────
@@ -55,7 +58,7 @@ class GemDetailAppBar extends StatelessWidget {
         ),
       ],
       title: Text(
-        '${gem.type.displayName} Details',
+        '${gem.name} Details',
         style: const TextStyle(
           color: GemDetailTheme.text,
           fontWeight: FontWeight.bold,
@@ -153,7 +156,7 @@ class GemTitleSection extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '${gem.carat} Carat ${gem.name.isNotEmpty ? gem.name : gem.type.displayName}',
+                  '${gem.carat ?? 0} Carat ${gem.name}',
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -224,7 +227,7 @@ class GemSellerSection extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          'Seller ID: ${gem.ownerId.isNotEmpty ? gem.ownerId : "Unknown"}',
+                          'Seller: ${gem.owner.isNotEmpty ? gem.owner : "Unknown"}',
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
@@ -237,7 +240,7 @@ class GemSellerSection extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Contact: ${gem.sellerPhone.isNotEmpty ? gem.sellerPhone : "Not Provided"}',
+                      'Contact: ${gem.sellerPhone != null && gem.sellerPhone!.isNotEmpty ? gem.sellerPhone : "Not Provided"}',
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -285,13 +288,10 @@ class GemSpecificationsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final specs = [
-      {'label': 'TYPE', 'value': gem.type.displayName},
-      {'label': 'SHAPE', 'value': gem.shape.isNotEmpty ? gem.shape : 'N/A'},
-      {'label': 'WEIGHT', 'value': '${gem.carat} Carats'},
-      {'label': 'COLOR GRADE', 'value': gem.color.isNotEmpty ? gem.color : 'N/A'},
-      {'label': 'CLARITY', 'value': gem.clarity.isNotEmpty ? gem.clarity : 'N/A'},
-      {'label': 'TREATMENT', 'value': gem.treatment.isNotEmpty ? gem.treatment : 'N/A'},
-      {'label': 'ORIGIN', 'value': gem.origin.isNotEmpty ? gem.origin : 'N/A'},
+      {'label': 'WEIGHT', 'value': '${gem.carat ?? 0} Carats'},
+      {'label': 'LOCATION', 'value': gem.location ?? 'N/A'},
+      {'label': 'STATUS', 'value': gem.status.name},
+      {'label': 'SELLER', 'value': gem.owner},
     ];
 
     return Padding(
@@ -386,34 +386,9 @@ class GemDescriptionSection extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            gem.description.isNotEmpty ? gem.description : 'No description provided.',
+            gem.description != null && gem.description!.isNotEmpty ? gem.description! : 'No description provided.',
             style: const TextStyle(fontSize: 14, color: GemDetailTheme.subText, height: 1.6),
           ),
-          if (gem.createdAt != null && gem.createdAt!.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Listed on: ${_formatDate(gem.createdAt!)}',
-              style: const TextStyle(fontSize: 12, color: GemDetailTheme.subText, fontStyle: FontStyle.italic),
-            ),
-          ],
-          if (gem.videoUrl != null && gem.videoUrl!.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ElevatedButton.icon(
-                onPressed: () {}, // Handle video playback
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: GemDetailTheme.accentLight,
-                  foregroundColor: GemDetailTheme.accent,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                icon: const Icon(Icons.play_circle_fill_rounded, size: 20),
-                label: const Text('Watch 360° Video', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -493,7 +468,7 @@ class GemLocationSection extends StatelessWidget {
                           const Icon(Icons.location_on_rounded, color: GemDetailTheme.accent, size: 18),
                           const SizedBox(width: 8),
                           Text(
-                            gem.location.isNotEmpty ? gem.location : 'Location Not Specified',
+                            gem.location != null && gem.location!.isNotEmpty ? gem.location! : 'Location Not Specified',
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,

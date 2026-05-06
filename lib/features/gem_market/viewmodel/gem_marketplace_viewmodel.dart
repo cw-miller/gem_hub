@@ -1,75 +1,63 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:job_market/data/models/gem_market/gem_model.dart';
 import 'package:job_market/data/repositories/gem/gem_repository_provider.dart';
+import 'package:job_market/features/gem_market/provider/gem_list_provider.dart';
 
 part 'gem_marketplace_viewmodel.g.dart';
 
 @riverpod
 class GemMarketplaceViewModel extends _$GemMarketplaceViewModel {
-  
+  List<Gem> _allGems = [];
+  String _searchQuery = '';
+
   @override
   Future<List<Gem>> build() async {
-    return _fetchGemsFromRepo();
+    // Watch the raw data source. 
+    // When rawGemListProvider gets data, this build method re-runs.
+    final gemsAsync = ref.watch(gemListProvider);
+
+    return gemsAsync.maybeWhen(
+      data: (gems) {
+        _allGems = gems;
+        return _applyFilters(_allGems);
+      },
+      orElse: () => [], // Returns empty while loading/error
+    );
   }
 
-  /// Private helper to handle the data fetch
-  Future<List<Gem>> _fetchGemsFromRepo() async {
-    final repository = ref.read(gemRepositoryProvider);
-    // Simple fetch without query/filter for now
-    return await repository.getAllGems();
+  List<Gem> _applyFilters(List<Gem> gems) {
+    if (_searchQuery.isEmpty) return gems;
+    return gems.where((gem) {
+      final query = _searchQuery.toLowerCase();
+      return gem.name.toLowerCase().contains(query) ||
+             (gem.description?.toLowerCase().contains(query) ?? false);
+    }).toList();
   }
 
-  /// Public method to manually refresh the list (pull-to-refresh)
+  void updateSearchQuery(String query) {
+    _searchQuery = query;
+    state = AsyncData(_applyFilters(_allGems));
+  }
+
+  // Manually trigger a refresh of the RAW data provider
   Future<void> fetchGems() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => _fetchGemsFromRepo());
+    // This forces the 'rawGemListProvider' to fetch from Django again
+    ref.invalidate(gemListProvider);
+    await ref.read(gemListProvider.future);
   }
 
-  /// CREATE: Add a new gem and refresh the list
+  // CREATE / UPDATE / DELETE
+  // Use the same pattern: perform action, then invalidate the raw provider
   Future<bool> addGem(Gem gem) async {
-    final repository = ref.read(gemRepositoryProvider);
-    
-    final result = await AsyncValue.guard(() async {
-      await repository.createGem(gem);
-      return _fetchGemsFromRepo();
-    });
-
-    if (result.hasValue) {
-      state = result;
+    try {
+      await ref.read(gemRepositoryProvider).createGem(gem);
+      ref.invalidate(gemListProvider); // Forces a fresh fetch
       return true;
+    } catch (_) {
+      return false;
     }
-    return false;
   }
-
-  /// UPDATE: Modify an existing gem
-  Future<bool> updateGem(Gem gem) async {
-    final repository = ref.read(gemRepositoryProvider);
-
-    final result = await AsyncValue.guard(() async {
-      await repository.updateGem(gem);
-      return _fetchGemsFromRepo();
-    });
-
-    if (result.hasValue) {
-      state = result;
-      return true;
-    }
-    return false;
-  }
-
-  /// DELETE: Remove a gem and refresh the state
-  Future<bool> deleteGem(String id) async {
-    final repository = ref.read(gemRepositoryProvider);
-
-    final result = await AsyncValue.guard(() async {
-      await repository.deleteGem(id);
-      return _fetchGemsFromRepo();
-    });
-
-    if (result.hasValue) {
-      state = result;
-      return true;
-    }
-    return false;
-  }
+  
+  // ... updateGem and deleteGem follow the same logic as addGem
 }

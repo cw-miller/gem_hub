@@ -1,8 +1,6 @@
 import 'package:job_market/core/enums/gem_status.dart';
 
 class Gem {
-  // 1. Changed type to String to match Django UUIDField
-  // 2. Changed key name to 'gem_id' to match your Django model
   final String? gemId; 
   final String owner;
   final String name;
@@ -29,9 +27,7 @@ class Gem {
 
   factory Gem.fromMap(Map<String, dynamic> map) {
     return Gem(
-      // Match the 'gem_id' from your Django table
       gemId: map['gem_id'], 
-      // Handle potential nested Profile object or simple ID string
       owner: map['owner'] is Map 
           ? map['owner']['profile'].toString() 
           : map['owner'].toString(),
@@ -48,7 +44,6 @@ class Gem {
 
   Map<String, dynamic> toMap() {
     return {
-      // Don't include gemId in toMap if you want Django/Postgres to generate it
       'owner': owner,
       'name': name,
       'carat': carat,

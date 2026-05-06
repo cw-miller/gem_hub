@@ -21,6 +21,9 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _images = widget.gem.imageUrl != null && widget.gem.imageUrl!.isNotEmpty
+        ? [widget.gem.imageUrl!]
+        : [];
   }
 
   @override

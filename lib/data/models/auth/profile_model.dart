@@ -1,7 +1,7 @@
 import 'package:job_market/core/enums/user_role.dart';
 
 class ProfileUser {
-  final int id;            // Changed to int to match DB int8
+  final String id;          // ✅ Changed to String to match UUID
   final String profileId;   // UUID from Supabase Auth
   final String? username;
   final String? phone;
@@ -26,10 +26,9 @@ class ProfileUser {
   // DB → Object
   factory ProfileUser.fromMap(Map<String, dynamic> map) {
     return ProfileUser(
-      // Cast directly to int. If it's null, we default to 0.
-      id: map['id'] as int? ?? 0, 
+      // ✅ Cast as String. If null, provide empty string.
+      id: map['id'] as String? ?? '', 
       
-      // Keep as String (UUID)
       profileId: map['profile_id'] as String? ?? '',
       
       username: map['username'],
