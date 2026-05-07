@@ -136,44 +136,44 @@ class DatabaseHelper {
       await db.insert('jobs', job);
     }
 
-    // Demo Gems
-    List<Map<String, dynamic>> demoGems = [
-      {
-        'owner_id': 'USER_001',
-        'name': 'Royal Blue Sapphire',
-        'type': 'Sapphire',
-        'carat': 4.5,
-        'price': 12500.0,
-        'description': 'Beautiful sapphire with high clarity',
-        'color': 'Blue',
-        'origin': 'Ceylon',
-        'location': 'Mayfair, London, UK',
-        'image_url':
-            'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=1000',
-        'video_url': 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        'seller_phone': '+94771234567',
-        'status': 'active',
-        'created_at': now.subtract(const Duration(days: 1)).toIso8601String(),
-      },
-      {
-        'owner_id': 'USER_002',
-        'name': 'Pigeon Blood Ruby',
-        'type': 'Ruby',
-        'carat': 2.1,
-        'price': 8900.0,
-        'description': 'Beautiful ruby with high clarity',
-        'color': 'Red',
-        'origin': 'Burma',
-        'image_url':
-            'https://images.unsplash.com/photo-1615111784767-4d7c307dc2bc?q=80&w=1000',
-        'seller_phone': '+94779876543',
-        'status': 'active',
-        'created_at': now.subtract(const Duration(hours: 12)).toIso8601String(),
-      },
-    ];
-    for (var gem in demoGems) {
-      await db.insert('gems', gem);
-    }
+  //   // Demo Gems
+  //   List<Map<String, dynamic>> demoGems = [
+  //     {
+  //       'owner_id': 'USER_001',
+  //       'name': 'Royal Blue Sapphire',
+  //       'type': 'Sapphire',
+  //       'carat': 4.5,
+  //       'price': 12500.0,
+  //       'description': 'Beautiful sapphire with high clarity',
+  //       'color': 'Blue',
+  //       'origin': 'Ceylon',
+  //       'location': 'Mayfair, London, UK',
+  //       'image_url':
+  //           'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=1000',
+  //       'video_url': 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  //       'seller_phone': '+94771234567',
+  //       'status': 'active',
+  //       'created_at': now.subtract(const Duration(days: 1)).toIso8601String(),
+  //     },
+  //     {
+  //       'owner_id': 'USER_002',
+  //       'name': 'Pigeon Blood Ruby',
+  //       'type': 'Ruby',
+  //       'carat': 2.1,
+  //       'price': 8900.0,
+  //       'description': 'Beautiful ruby with high clarity',
+  //       'color': 'Red',
+  //       'origin': 'Burma',
+  //       'image_url':
+  //           'https://images.unsplash.com/photo-1615111784767-4d7c307dc2bc?q=80&w=1000',
+  //       'seller_phone': '+94779876543',
+  //       'status': 'active',
+  //       'created_at': now.subtract(const Duration(hours: 12)).toIso8601String(),
+  //     },
+  //   ];
+  //   for (var gem in demoGems) {
+  //     await db.insert('gems', gem);
+  //   }
   }
 
   Future<Map<String, dynamic>?> getUserData(String username) async {
