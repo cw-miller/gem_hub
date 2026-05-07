@@ -13,60 +13,55 @@ class MainNavigation extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Watch the SESSION instead of the ViewModel for stable user data
     final sessionAsync = ref.watch(sessionProvider);
     final user = sessionAsync.value;
-    
-    // 2. Get location from context
     final location = GoRouterState.of(context).uri.path;
-    
-    // 3. Determine index based on path (Cleaner logic)
+
+    // 1. Define the order exactly as they appear in your BottomNavBar
+    // final routes = ['/jobs', '/gems', '/inventory', '/profile'];
+    final routes = ['/home', '/inventory', '/gems', '/jobs', '/profile'];
+
+    // 2. Determine index based on the current path
     int currentIndex = 0;
-    if (location.startsWith('/jobs')) {
-      currentIndex = 0;
-    } else if (location.startsWith('/gems')) {
+    if (location.startsWith('/inventory')) {
       currentIndex = 1;
-    } else if (location.startsWith('/profile')) {
+    } else if (location.startsWith('/gems')) {
       currentIndex = 2;
+    } else if (location.startsWith('/jobs')) {
+      currentIndex = 3;
+    } else if (location.startsWith('/profile')) {
+      currentIndex = 4;
+    } else {
+      currentIndex = 0; // Default to /home
     }
 
-    // 4. Theme and Role logic
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark ? const Color(0xFF111827) : const Color(0xFFF5F7FA);
-    
-    // Safe role check: If data is still loading, default to false
+    final backgroundColor = isDark
+        ? const Color(0xFF111827)
+        : const Color(0xFFF5F7FA);
     final isAdmin = user?.profile?.role == UserRole.ADMIN;
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      // Use resizeToAvoidBottomInset to prevent UI squash when keyboard opens
-      resizeToAvoidBottomInset: false, 
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Column(
           children: [
-            // AppHeader now stays visible and stable
-            Container(
-              color: backgroundColor,
-              child: const AppHeader(),
-            ),
-            // The routed screen content
+            // const AppHeader(), // Cleaner: Color is inherited from Scaffold
             Expanded(child: child),
           ],
         ),
       ),
-      // Only show the bottom bar for non-admins
-      bottomNavigationBar: isAdmin 
-        ? null 
-        : AppBottomNavigationBar(
-            currentIndex: currentIndex,
-            onTap: (index) {
-              // Direct mapping for cleaner readability
-              final routes = ['/jobs', '/gems', '/profile'];
-              if (index >= 0 && index < routes.length) {
-                context.go(routes[index]);
-              }
-            },
-          ),
+      bottomNavigationBar: isAdmin
+          ? null
+          : AppBottomNavigationBar(
+              currentIndex: currentIndex,
+              onTap: (index) {
+                if (index >= 0 && index < routes.length) {
+                  context.go(routes[index]);
+                }
+              },
+            ),
     );
   }
 }

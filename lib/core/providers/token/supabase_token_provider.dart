@@ -1,5 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:job_market/core/providers/supabase_provider.dart';
+import 'package:job_market/core/providers/supabase/supabase_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'supabase_token_provider.g.dart';

@@ -34,7 +34,7 @@ final class GemMarketplaceViewModelProvider
 }
 
 String _$gemMarketplaceViewModelHash() =>
-    r'd7bbb5fed7ddfeaff7cb8cab7210ce81bd75e12a';
+    r'e1601ec8fae197d1705b58265aa3dfb3d61b7468';
 
 abstract class _$GemMarketplaceViewModel extends $AsyncNotifier<List<Gem>> {
   FutureOr<List<Gem>> build();

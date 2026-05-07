@@ -9,6 +9,9 @@ import 'package:job_market/features/gem_market/view/gem_market.dart';
 import 'package:job_market/features/auth/view/admin_screen.dart';
 import 'package:job_market/features/auth/view/login_screen.dart';
 import 'package:job_market/features/auth/view/sign_up_screen.dart';
+import 'package:job_market/features/inventory/view/inventory_screen_view.dart';
+import 'package:job_market/features/home/view/home_screen.dart';
+import 'package:job_market/features/profile/view/profile_screen.dart';
 import 'package:job_market/core/router/router_notifier.dart';
 
 part 'app_router.g.dart';
@@ -61,8 +64,20 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: '/profile',
             name: 'profile',
-            builder: (context, state) => const JobMarketplaceScreen(),
+            builder: (context, state) => const ProfileScreen(),
           ),
+          GoRoute(
+            path: '/inventory',
+            name: 'inventory',
+            builder: (context, state) => const InventoryScreen(),
+          ),
+        
+          GoRoute(
+            path: '/home',
+            name: 'home',
+            builder: (context, state) => const HomeScreen(),
+          ),
+        
         ],
       ),
     ],

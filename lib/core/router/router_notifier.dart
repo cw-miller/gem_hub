@@ -52,13 +52,13 @@ class RouterNotifier extends ChangeNotifier {
 
       // Prevent logged-in users from visiting Login/Signup or the root
       if (isGuestPage || path == '/') {
-        return (userRole == UserRole.ADMIN) ? '/admin' : '/gems';
+        return (userRole == UserRole.ADMIN) ? '/admin' : '/home';
       }
 
       // Security: Prevent non-admins from accessing admin routes
       if (path.startsWith('/admin') && userRole != UserRole.ADMIN) {
         debugPrint('Security: Non-admin attempted to access admin route. Redirecting...');
-        return '/gems';
+        return '/home';
       }
     }
 
