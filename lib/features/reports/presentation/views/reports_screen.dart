@@ -17,46 +17,51 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   GemFilter _currentFilter = GemFilter();
 
   @override
-Widget build(BuildContext context) {
-  final gemsAsync = ref.watch(filteredGemstonesProvider(filter: _currentFilter));
+  Widget build(BuildContext context) {
+    final gemsAsync = ref.watch(
+      filteredGemstonesProvider(filter: _currentFilter),
+    );
 
-  return Scaffold(
-    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-    appBar: AppBar(title: const Text("Inventory Report"), elevation: 0),
-    body: Column(
-      children: [
-        _buildFilterSection(),
-        Expanded(
-          child: gemsAsync.when(
-            data: (gems) {
-              // 1. Calculate the total here so it's always accurate to the filtered list
-              final totalPortfolio = gems.fold<double>(
-                0, (sum, gem) => sum + gem.targetPrice,
-              );
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(title: const Text("Inventory Report"), elevation: 0),
+      body: Column(
+        children: [
+          _buildFilterSection(),
+          Expanded(
+            child: gemsAsync.when(
+              data: (gems) {
+                // 1. Calculate the total using only current inventory value.
+                // Sold gems should not contribute to the active portfolio total.
+                final totalPortfolio = gems.fold<double>(
+                  0,
+                  (sum, gem) => sum + (gem.isSold ? 0.0 : gem.targetPrice),
+                );
 
-              return SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // 2. Pass the freshly calculated total here
-                    _buildTotalHeader(totalPortfolio),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: gems.length,
-                      itemBuilder: (context, index) => _buildGemCard(gems[index]),
-                    ),
-                  ],
-                ),
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Center(child: Text("Error: $err")),
+                return SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // 2. Pass the freshly calculated total here
+                      _buildTotalHeader(totalPortfolio),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: gems.length,
+                        itemBuilder: (context, index) =>
+                            _buildGemCard(gems[index]),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Center(child: Text("Error: $err")),
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   Widget _buildTotalHeader(double total) {
     return Container(
@@ -95,70 +100,90 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildFilterSection() {
-  // Watch the new varieties provider
-  final varietiesAsync = ref.watch(gemstoneVarietiesProvider);
+    // Watch the new varieties provider
+    final varietiesAsync = ref.watch(gemstoneVarietiesProvider);
 
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-    decoration: BoxDecoration(
-      color: Theme.of(context).cardColor,
-      border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
-    ),
-    child: Row(
-      children: [
-        // Date Filter (as before)
-        Expanded(
-          flex: 2,
-          child: OutlinedButton.icon(
-            onPressed: () async {
-              final picked = await showDateRangePicker(
-                context: context,
-                firstDate: DateTime(2020),
-                lastDate: DateTime(2030),
-              );
-              if (picked != null) {
-                setState(() => _currentFilter = _currentFilter.copyWith(dateRange: picked));
-              }
-            },
-            icon: const Icon(Icons.calendar_month, size: 16),
-            label: Text(_currentFilter.dateRange == null ? "Month" : "Filtered", 
-                   style: const TextStyle(fontSize: 12)),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).dividerColor.withOpacity(0.1),
           ),
         ),
-        const SizedBox(width: 8),
-        
-        // Real Varieties Dropdown
-        Expanded(
-          flex: 3,
-          child: varietiesAsync.when(
-            data: (varieties) => DropdownButtonFormField<String>(
-              initialValue: _currentFilter.variety ?? 'All',
-              isExpanded: true,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                labelText: "Variety",
-              ),
-              items: varieties.map((val) => DropdownMenuItem(
-                value: val,
-                child: Text(val, style: const TextStyle(fontSize: 12)),
-              )).toList(),
-              onChanged: (value) {
-                setState(() => _currentFilter = _currentFilter.copyWith(variety: value));
+      ),
+      child: Row(
+        children: [
+          // Date Filter (as before)
+          Expanded(
+            flex: 2,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final picked = await showDateRangePicker(
+                  context: context,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2030),
+                );
+                if (picked != null) {
+                  setState(
+                    () => _currentFilter = _currentFilter.copyWith(
+                      dateRange: picked,
+                    ),
+                  );
+                }
               },
+              icon: const Icon(Icons.calendar_month, size: 16),
+              label: Text(
+                _currentFilter.dateRange == null ? "Month" : "Filtered",
+                style: const TextStyle(fontSize: 12),
+              ),
             ),
-            // Show a simple text while loading varieties
-            loading: () => const LinearProgressIndicator(),
-            error: (err, _) => const Text("Error"),
           ),
-        ),
-      ],
-    ),
-  );
-}
+          const SizedBox(width: 8),
+
+          // Real Varieties Dropdown
+          Expanded(
+            flex: 3,
+            child: varietiesAsync.when(
+              data: (varieties) => DropdownButtonFormField<String>(
+                initialValue: _currentFilter.variety ?? 'All',
+                isExpanded: true,
+                decoration: InputDecoration(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  labelText: "Variety",
+                ),
+                items: varieties
+                    .map(
+                      (val) => DropdownMenuItem(
+                        value: val,
+                        child: Text(val, style: const TextStyle(fontSize: 12)),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(
+                    () => _currentFilter = _currentFilter.copyWith(
+                      variety: value,
+                    ),
+                  );
+                },
+              ),
+              // Show a simple text while loading varieties
+              loading: () => const LinearProgressIndicator(),
+              error: (err, _) => const Text("Error"),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-  Widget _buildGemCard(GemstoneModel gem) {
+Widget _buildGemCard(GemstoneModel gem) {
   // 1. Calculate Total Cost
   final double totalCost =
       gem.buyingPrice +
@@ -169,8 +194,8 @@ Widget build(BuildContext context) {
       gem.otherCost;
 
   // 2. Logic: If sold, use Selling Price. If not sold, use Target Price for "Potential Profit"
-  final double displayProfit = gem.isSold 
-      ? (gem.sellingPrice - totalCost) 
+  final double displayProfit = gem.isSold
+      ? (gem.sellingPrice - totalCost)
       : (gem.targetPrice - totalCost);
 
   return Card(
@@ -196,12 +221,17 @@ Widget build(BuildContext context) {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: gem.finalImagePath != null && gem.finalImagePath!.isNotEmpty
+                  child:
+                      gem.finalImagePath != null &&
+                          gem.finalImagePath!.isNotEmpty
                       ? Image.file(
                           File(gem.finalImagePath!),
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.broken_image, color: Colors.grey),
+                              const Icon(
+                                Icons.broken_image,
+                                color: Colors.grey,
+                              ),
                         )
                       : const Icon(Icons.diamond, color: Colors.blueGrey),
                 ),
@@ -211,7 +241,10 @@ Widget build(BuildContext context) {
                   bottom: 0,
                   right: 0,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green,
                       borderRadius: const BorderRadius.only(
@@ -221,7 +254,11 @@ Widget build(BuildContext context) {
                     ),
                     child: const Text(
                       "SOLD",
-                      style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -236,7 +273,10 @@ Widget build(BuildContext context) {
               children: [
                 Text(
                   gem.variety,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -270,5 +310,3 @@ Widget build(BuildContext context) {
     ),
   );
 }
-  
-

@@ -1,4 +1,5 @@
-import 'package:job_market/data/datasources/local/database_helper.dart';
+import 'package:job_market/data/models/inventory/gemstone_model.dart';
+import 'package:job_market/features/inventory/provider/inventory_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'portfolio_provider.g.dart';
@@ -6,37 +7,26 @@ part 'portfolio_provider.g.dart';
 @riverpod
 // ignore: deprecated_member_use_from_same_package
 Future<Map<String, double>> portfolioData(Ref ref) async {
-  final db = await DatabaseHelper().database;
-  final List<Map<String, dynamic>> maps = await db.query('gemstones');
+  final gems = await ref.watch(inventoryProvider.future);
 
   double inventoryValue = 0;
   double realizedProfit = 0;
 
-  for (var row in maps) {
-    // 1. Sum up costs using underscore names
-    final double itemCost = 
-        (row['buying_price'] ?? 0.0).toDouble() +
-        (row['treatment_cost'] ?? 0.0).toDouble() +
-        (row['recut_cost'] ?? 0.0).toDouble() +
-        (row['other_processing_cost'] ?? 0.0).toDouble() +
-        (row['transport_cost'] ?? 0.0).toDouble() +
-        (row['other_cost'] ?? 0.0).toDouble();
+  for (var gem in gems) {
+    final double totalCost =
+        gem.buyingPrice +
+        gem.treatmentCost +
+        gem.recutCost +
+        gem.otherProcessingCost +
+        gem.transportCost +
+        gem.otherCost;
 
-    // 2. Check "is_sold" (MATCH THE SCHEMA)
-    final bool isSold = (row['is_sold'] ?? 0) == 1;
-
-    if (isSold) {
-      // ✅ Use "selling_price" (MATCH THE SCHEMA)
-      final double sellingPrice = (row['selling_price'] ?? 0.0).toDouble();
-      realizedProfit += (sellingPrice - itemCost);
+    if (gem.isSold) {
+      realizedProfit += gem.sellingPrice - totalCost;
     } else {
-      // 💎 Use "target_price" (MATCH THE SCHEMA)
-      inventoryValue += (row['target_price'] ?? 0.0).toDouble();
+      inventoryValue += gem.targetPrice;
     }
   }
 
-  return {
-    'inventoryValue': inventoryValue,
-    'realizedProfit': realizedProfit,
-  };
+  return {'inventoryValue': inventoryValue, 'realizedProfit': realizedProfit};
 }
