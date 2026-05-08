@@ -42,10 +42,10 @@ class GemRepository {
   /// We use the gemId we parsed earlier to target the correct URL
   Future<Gem> updateGem(Gem gem) async {
     if (gem.gemId == null) throw 'Cannot update a gem without an ID';
-    
+
     try {
       final response = await _dio.patch(
-        'gems/${gem.gemId}/', 
+        'gems/${gem.gemId}/',
         data: gem.toMap(),
       );
       return Gem.fromMap(response.data);
@@ -57,8 +57,25 @@ class GemRepository {
   /// DELETE: Remove a gem listing
   Future<void> deleteGem(String id) async {
     try {
-      await _dio.delete('gems/$id/');
+      // 1. Ensure the ID is not empty
+      if (id.isEmpty) {
+        print('❌ Error: Attempted to delete with an empty ID');
+        return;
+      }
+
+      // 2. Target the SPECIFIC gem URL (notice the trailing slash)
+      final url = 'gems/$id/';
+      print('🚀 Attempting DELETE on: $url');
+
+      final response = await _dio.delete(url);
+
+      print('✅ Delete Success. Status: ${response.statusCode}');
     } on DioException catch (e) {
+      print('❌ DELETE FAILED');
+      print(
+        'Requested URL: ${e.requestOptions.uri}',
+      ); // Check if ID is actually in this URI
+      print('Allowed Methods: ${e.response?.headers['allow']}');
       throw _handleError(e);
     }
   }

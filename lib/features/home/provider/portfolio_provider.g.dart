@@ -48,4 +48,4 @@ final class PortfolioDataProvider
   }
 }
 
-String _$portfolioDataHash() => r'952c5c894328fc7da83a2332ae5c45c7fdd12aef';
+String _$portfolioDataHash() => r'0efe81e624e6b3e3171f4ff42d2acbbd54aa903b';

@@ -1,5 +1,7 @@
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:job_market/features/gem_market/view/gem_evaluate_screen.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 // Screens
@@ -76,6 +78,11 @@ GoRouter router(Ref ref) {
             path: '/home',
             name: 'home',
             builder: (context, state) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: '/evaluate-gem',
+            name: 'evaluate-gem',
+            builder: (context, state) => const GemEvaluateScreen(),
           ),
         
         ],

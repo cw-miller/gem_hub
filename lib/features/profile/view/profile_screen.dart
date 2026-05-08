@@ -4,6 +4,8 @@ import 'package:job_market/data/models/auth/auth_state.dart';
 import 'package:job_market/features/auth/provider/session_provider.dart';
 import 'package:job_market/features/auth/viewmodel/auth_viewmodel.dart';
 import 'package:job_market/features/inventory/provider/inventory_provider.dart';
+import 'package:go_router/go_router.dart';
+
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -80,6 +82,7 @@ class ProfileScreen extends ConsumerWidget {
                 Colors.green,
                 "Marketplace Alerts",
                 textColor,
+                onTap: () => context.push('/evaluate-gem')
               ),
               _buildMenuTile(
                 Icons.work_outline,

@@ -70,7 +70,7 @@ final class FilteredGemstonesProvider
   }
 }
 
-String _$filteredGemstonesHash() => r'a74394f24898e3b62be426a4a37319ee7d89b70d';
+String _$filteredGemstonesHash() => r'c259ec36db779fe451791b9fd76cb1dbdef2a936';
 
 /// Provider to fetch and filter gemstones based on UI selection
 
@@ -136,4 +136,4 @@ final class GemstoneVarietiesProvider
   }
 }
 
-String _$gemstoneVarietiesHash() => r'10c80acdae66a157423d532d6be6074fff61a341';
+String _$gemstoneVarietiesHash() => r'ebb4cb7ce92caebb5bfdda2373edd1b58f72544f';

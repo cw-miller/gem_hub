@@ -3,18 +3,18 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:job_market/core/api/supabase_auth_interceptor.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-
 part 'dio_provider.g.dart';
-
 
 @riverpod
 Dio dio(Ref ref) {
-  // No await needed here anymore
-  final baseUrl = dotenv.env['API_BASE_URL'];
-  
-  if (baseUrl == null) {
+  final rawBaseUrl = dotenv.env['API_BASE_URL'];
+
+  if (rawBaseUrl == null) {
     throw Exception("API_BASE_URL not found in .env file");
   }
+
+  // FIX: Ensure baseUrl ends with /
+  final baseUrl = rawBaseUrl.endsWith('/') ? rawBaseUrl : '$rawBaseUrl/';
 
   final dio = Dio(
     BaseOptions(
@@ -25,14 +25,23 @@ Dio dio(Ref ref) {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
+      // Optional: Add this to handle Django's 301 redirects better
+      followRedirects: true,
+      validateStatus: (status) => status! < 500,
     ),
   );
 
-  // Add the Supabase Auth Interceptor
   dio.interceptors.add(SupabaseAuthInterceptor(ref));
-  
-  // LogInterceptor is great for dev
-  dio.interceptors.add(LogInterceptor(responseBody: true, requestBody: true));
+  dio.interceptors.add(
+    LogInterceptor(
+      request: true, // Ensures the URL/Method is printed
+      requestHeader: true, // Prints the headers
+      requestBody: true, // Prints the data you are sending
+      responseHeader: false,
+      responseBody: true,
+      error: true,
+    ),
+  );
 
   return dio;
 }
